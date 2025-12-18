@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en" style="height: 100%;">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Christmas Letter Practice</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      box-sizing: border-box;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    @keyframes snowfall {
+      0% { transform: translateY(-10px) translateX(0); opacity: 1; }
+      100% { transform: translateY(100vh) translateX(20px); opacity: 0.3; }
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    .snowflake {
+      position: absolute;
+      top: -10px;
+      color: white;
+      font-size: 20px;
+      animation: snowfall linear infinite;
+      pointer-events: none;
+    }
+    
+    .star {
+      animation: twinkle 2s ease-in-out infinite;
+    }
+    
+    .letter-display {
+      font-size: 120px;
+      font-weight: bold;
+      text-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+    }
+    
+    .typing-input {
+      font-size: 80px;
+      text-align: center;
+      width: 150px;
+      height: 150px;
+      border: 6px solid;
+      border-radius: 20px;
+      caret-color: transparent;
+    }
+    
+    .success-animation {
+      animation: bounce 0.5s ease-in-out;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body style="height: 100%;">
+  <div id="app" style="min-height: 100%; width: 100%; overflow: auto;"><!-- Snowflakes background -->
+   <div id="snowflakes" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;"></div>
+   <div style="min-height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; position: relative; z-index: 1;"><!-- Title -->
+    <h1 id="title" class="text-5xl font-bold text-center mb-8">🎄 Christmas Letter Practice 🎅</h1><!-- Level selector -->
+    <div class="flex gap-4 mb-12 flex-wrap justify-center"><button id="level1-btn" class="px-8 py-4 text-2xl font-bold rounded-xl shadow-lg transition-all hover:scale-105"> <span id="level1-label">Level 1: Lowercase</span> ⭐ </button> <button id="level2-btn" class="px-8 py-4 text-2xl font-bold rounded-xl shadow-lg transition-all hover:scale-105"> <span id="level2-label">Level 2: Uppercase</span> ⭐⭐ </button> <button id="level3-btn" class="px-8 py-4 text-2xl font-bold rounded-xl shadow-lg transition-all hover:scale-105"> <span id="level3-label">Level 3: Mixed</span> ⭐⭐⭐ </button>
+    </div><!-- Main practice area -->
+    <div class="text-center">
+     <div class="mb-8">
+      <p class="text-3xl mb-4 font-semibold">Type this letter:</p>
+      <div id="letter-display" class="letter-display mb-8"></div>
+     </div>
+     <div class="flex flex-col items-center gap-6"><input type="text" id="typing-input" class="typing-input font-bold" maxlength="1" autocomplete="off" aria-label="Type the letter shown above">
+      <div id="feedback" class="text-4xl font-bold h-12"></div>
+     </div>
+    </div><!-- Score -->
+    <div class="mt-12 text-2xl font-bold text-center"><span>Progress: </span><span id="score">0/62</span> 🌟
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      background_color: "#dc2626",
+      surface_color: "#16a34a",
+      text_color: "#ffffff",
+      primary_action_color: "#b91c1c",
+      secondary_action_color: "#15803d",
+      font_family: "Arial",
+      font_size: 16,
+      title: "🎄 Christmas Letter Practice 🎅",
+      level_1_label: "Level 1: Lowercase",
+      level_2_label: "Level 2: Uppercase",
+      level_3_label: "Level 3: Mixed",
+      success_message: "Great job!",
+      try_again_message: "Try again!"
+    };
+    
+    let currentLevel = 1;
+    let currentLetter = '';
+    let score = 0;
+    let remainingLetters = [];
+    
+    const lowercaseLetters = 'abcdefghijklmnopqrstuvwxyz0123456789'.split('');
+    const uppercaseLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
+    const mixedLetters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
+    
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+    
+    function initializeLevel() {
+      let letters;
+      if (currentLevel === 1) {
+        letters = lowercaseLetters;
+      } else if (currentLevel === 2) {
+        letters = uppercaseLetters;
+      } else {
+        letters = mixedLetters;
+      }
+      remainingLetters = shuffleArray(letters);
+    }
+    
+    function createSnowflakes() {
+      const container = document.getElementById('snowflakes');
+      for (let i = 0; i < 30; i++) {
+        const snowflake = document.createElement('div');
+        snowflake.className = 'snowflake';
+        snowflake.textContent = '🎄';
+        snowflake.style.left = Math.random() * 100 + '%';
+        snowflake.style.animationDuration = (Math.random() * 3 + 5) + 's';
+        snowflake.style.animationDelay = Math.random() * 5 + 's';
+        container.appendChild(snowflake);
+      }
+    }
+    
+    function getNextLetter() {
+      if (remainingLetters.length === 0) {
+        return null;
+      }
+      return remainingLetters.shift();
+    }
+    
+    function showNewLetter() {
+      const nextLetter = getNextLetter();
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      
+      if (nextLetter === null) {
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = '🎉 Level Complete! 🎉';
+        feedback.style.color = config.secondary_action_color || defaultConfig.secondary_action_color;
+        document.getElementById('letter-display').textContent = '🌟';
+        document.getElementById('typing-input').style.display = 'none';
+        
+        setTimeout(() => {
+          const nextLevel = currentLevel === 3 ? 1 : currentLevel + 1;
+          setLevel(nextLevel);
+          document.getElementById('typing-input').style.display = 'block';
+        }, 3000);
+        return;
+      }
+      
+      currentLetter = nextLetter;
+      document.getElementById('letter-display').textContent = currentLetter;
+      document.getElementById('typing-input').value = '';
+      document.getElementById('feedback').textContent = '';
+      document.getElementById('typing-input').focus();
+      document.getElementById('typing-input').style.borderColor = config.surface_color || defaultConfig.surface_color;
+      
+      const total = currentLevel === 3 ? 62 : 36;
+      const progress = total - remainingLetters.length;
+      document.getElementById('score').textContent = `${progress}/${total}`;
+    }
+    
+    function checkInput() {
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const input = document.getElementById('typing-input').value;
+      const feedback = document.getElementById('feedback');
+      const inputEl = document.getElementById('typing-input');
+      
+      if (input === currentLetter) {
+        feedback.textContent = `✨ ${config.success_message || defaultConfig.success_message} ✨`;
+        feedback.style.color = config.secondary_action_color || defaultConfig.secondary_action_color;
+        inputEl.style.borderColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+        inputEl.classList.add('success-animation');
+        setTimeout(() => {
+          inputEl.classList.remove('success-animation');
+          showNewLetter();
+        }, 1000);
+      } else if (input) {
+        feedback.textContent = `🎄 ${config.try_again_message || defaultConfig.try_again_message} 🎄`;
+        feedback.style.color = config.primary_action_color || defaultConfig.primary_action_color;
+        inputEl.style.borderColor = config.primary_action_color || defaultConfig.primary_action_color;
+      }
+    }
+    
+    function setLevel(level) {
+      currentLevel = level;
+      initializeLevel();
+      const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+      const level1Btn = document.getElementById('level1-btn');
+      const level2Btn = document.getElementById('level2-btn');
+      const level3Btn = document.getElementById('level3-btn');
+      
+      level1Btn.style.backgroundColor = level === 1 ? (config.secondary_action_color || defaultConfig.secondary_action_color) : (config.surface_color || defaultConfig.surface_color);
+      level1Btn.style.color = config.text_color || defaultConfig.text_color;
+      
+      level2Btn.style.backgroundColor = level === 2 ? (config.secondary_action_color || defaultConfig.secondary_action_color) : (config.surface_color || defaultConfig.surface_color);
+      level2Btn.style.color = config.text_color || defaultConfig.text_color;
+      
+      level3Btn.style.backgroundColor = level === 3 ? (config.secondary_action_color || defaultConfig.secondary_action_color) : (config.surface_color || defaultConfig.surface_color);
+      level3Btn.style.color = config.text_color || defaultConfig.text_color;
+      
+      showNewLetter();
+    }
+    
+    async function onConfigChange(config) {
+      const baseFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'Arial, sans-serif';
+      const baseSize = config.font_size || defaultConfig.font_size;
+      
+      document.body.style.backgroundColor = config.background_color || defaultConfig.background_color;
+      document.body.style.color = config.text_color || defaultConfig.text_color;
+      document.body.style.fontFamily = `${baseFont}, ${baseFontStack}`;
+      
+      document.getElementById('title').textContent = config.title || defaultConfig.title;
+      document.getElementById('title').style.fontSize = `${baseSize * 2}px`;
+      document.getElementById('title').style.color = config.text_color || defaultConfig.text_color;
+      
+      document.getElementById('level1-label').textContent = config.level_1_label || defaultConfig.level_1_label;
+      document.getElementById('level2-label').textContent = config.level_2_label || defaultConfig.level_2_label;
+      document.getElementById('level3-label').textContent = config.level_3_label || defaultConfig.level_3_label;
+      
+      const level1Btn = document.getElementById('level1-btn');
+      const level2Btn = document.getElementById('level2-btn');
+      const level3Btn = document.getElementById('level3-btn');
+      
+      level1Btn.style.backgroundColor = currentLevel === 1 ? (config.secondary_action_color || defaultConfig.secondary_action_color) : (config.surface_color || defaultConfig.surface_color);
+      level1Btn.style.color = config.text_color || defaultConfig.text_color;
+      
+      level2Btn.style.backgroundColor = currentLevel === 2 ? (config.secondary_action_color || defaultConfig.secondary_action_color) : (config.surface_color || defaultConfig.surface_color);
+      level2Btn.style.color = config.text_color || defaultConfig.text_color;
+      
+      level3Btn.style.backgroundColor = currentLevel === 3 ? (config.secondary_action_color || defaultConfig.secondary_action_color) : (config.surface_color || defaultConfig.surface_color);
+      level3Btn.style.color = config.text_color || defaultConfig.text_color;
+      
+      document.getElementById('letter-display').style.color = config.text_color || defaultConfig.text_color;
+      
+      const typingInput = document.getElementById('typing-input');
+      typingInput.style.backgroundColor = config.surface_color || defaultConfig.surface_color;
+      typingInput.style.color = config.text_color || defaultConfig.text_color;
+      typingInput.style.borderColor = config.surface_color || defaultConfig.surface_color;
+      
+      const elements = document.querySelectorAll('p, button, div');
+      elements.forEach(el => {
+        if (el.id !== 'title') {
+          el.style.fontFamily = `${baseFont}, ${baseFontStack}`;
+        }
+      });
+    }
+    
+    document.getElementById('typing-input').addEventListener('input', checkInput);
+    document.getElementById('level1-btn').addEventListener('click', () => setLevel(1));
+    document.getElementById('level2-btn').addEventListener('click', () => setLevel(2));
+    document.getElementById('level3-btn').addEventListener('click', () => setLevel(3));
+    
+    createSnowflakes();
+    
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.surface_color || defaultConfig.surface_color,
+              set: (value) => {
+                config.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: () => config.primary_action_color || defaultConfig.primary_action_color,
+              set: (value) => {
+                config.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+              set: (value) => {
+                config.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["title", config.title || defaultConfig.title],
+          ["level_1_label", config.level_1_label || defaultConfig.level_1_label],
+          ["level_2_label", config.level_2_label || defaultConfig.level_2_label],
+          ["level_3_label", config.level_3_label || defaultConfig.level_3_label],
+          ["success_message", config.success_message || defaultConfig.success_message],
+          ["try_again_message", config.try_again_message || defaultConfig.try_again_message]
+        ])
+      });
+    }
+    
+    onConfigChange(defaultConfig);
+    setLevel(1);
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9afef285e42ab983',t:'MTc2NjA2MzkxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
